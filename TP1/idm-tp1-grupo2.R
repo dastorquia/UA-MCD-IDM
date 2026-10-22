@@ -92,3 +92,21 @@ summary(itemsets)
 
 top_20_itemsets <- sort(itemsets, by = "support", decreasing = TRUE)[1:20]
 inspect(top_20_itemsets)
+
+# ------------------------------------------------------------------------------
+# 3. Reglas de asociación: generar reglas con una confianza mínima del 80%. Ordenar
+# las reglas obtenidas de mayor a menor lift y seleccionar las 10 primeras.
+
+reglas <- apriori(data = peliculas,
+                  parameter = list(support = 0.1,
+                                   minlen = 1,
+                                   maxlen = 20,
+                                   confidence = 0.80,
+                                   target = "rules"))
+
+summary(reglas)
+
+#ordenadas por lift
+inspect(sort(x = reglas, decreasing = TRUE, by = "lift")[1:10])
+
+
