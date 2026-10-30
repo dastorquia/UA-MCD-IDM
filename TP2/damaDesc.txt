@@ -1,0 +1,17 @@
+Los datos están formados por 18 variedades distintas de damascos. Con el fin de caracterizar la colección de
+variedades se tomaron muestras de flores, hojas y frutos registrándose los principales caracteres
+cuantitativos de estos órganos.
+Las flores se recogieron en plena floración, eligiéndose aquellas totalmente desarrolladas y abiertas. Los
+caracteres medidos fueron : tamaño de la flor (TAMFLOR), longitud de pétalo (LONGPET) y ancho de pétalo
+(ANCHOPET).
+Las hojas fueron muestreadas en el mes de mayo, se eligieron hojas adultas procedentes de ramos mixtos,
+aproximadamente de la parte central de éstos, y se seleccionaron aquellas en buen estado fisiológico y
+sanitario. Los caracteres medidos fueron: superficie de hoja (SUPHOJA), relación longitud y ancho de hoja
+(LONANCHO), relación peciolo-limbo (PECLIMBO).
+Por otra parte, los frutos se recolectaron maduros, tomando como referencia la desaparición total del color
+verde, se muestrearon al azar de todas las caras del árbol. Los caracteres registrados fueron: peso de fruto
+(PESOF), longitud de fruto (LONGF), ancho de fruto (ANCHOF), espesor de fruto (ESPESORF), peso del
+endocarpio (PESOEND), longitud del endocarpio (LONGEND) y ancho del endocarpio (ANCHOEND).
+El tamaño de la muestra para cada órgano y variedad fue de 25 repeticiones.
+Todas los registros de peso están expresados en gramos, los de longitud en milímetros y superficie en
+centímetros cuadrados
