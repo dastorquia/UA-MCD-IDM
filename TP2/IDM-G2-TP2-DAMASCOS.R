@@ -1,114 +1,186 @@
-# IDM
-# TP 2 - DAMASCOS
-
-damas <- read.delim2("~/MCD-IDM/UA-MCD-IDM/TP2/damas.txt")
-View(damas)
+# =============================================================
+# INTRODUCCIÓN A DATA MINING - UNIVERSIDAD AUSTRAL
+# GRUPO 2 - TP 2: DAMASCOS
+# Análisis de Componentes Principales
+# =============================================================
 
 knitr::opts_chunk$set(echo = TRUE)
 
-masterPath <- "~/MCD-IDM/UA-MCD-IDM/TP2/"
+# -------------------------------------------------------------
+# 0. Paquetes
+# -------------------------------------------------------------
+listofpackages <- c("psych", "ggplot2", "knitr", "pastecs", "FactoMineR",
+                    "grid", "gridExtra", "ggfortify", "factoextra",
+                    "corrplot", "dplyr")
 
-listofpackages <- c( "psych",     "ggplot2",    "knitr",
-                     "pastecs",   "FactoMineR", "grid",
-                     "gridExtra", "ggfortify",  "factoextra",
-                     "corrplot",  "dplyr")
-newPackages <- listofpackages[ !(listofpackages %in% installed.packages()[, "Package"])]
-if(length(newPackages)) install.packages(newPackages)
+newPackages <- listofpackages[!(listofpackages %in% installed.packages()[, "Package"])]
+if (length(newPackages)) install.packages(newPackages)
+
 for (paquete in listofpackages) {
   suppressMessages(library(paquete, character.only = TRUE))
 }
 
+# -------------------------------------------------------------
+# 1. Lectura de datos
+# -------------------------------------------------------------
+masterPath <- "~/MCD-IDM/UA-MCD-IDM/TP2/"
 
-# -----------------
-# Análisis de los datos
+dfDamas <- read.table(paste0(masterPath, "damas.txt"),
+                      sep = "\t",
+                      dec = ",",
+                      header = TRUE,
+                      fileEncoding = "UTF-8")
+
+knitr::kable(head(dfDamas))   # primeras filas del dataset
+
+# Los datos están formados por 18 variedades distintas de damascos. Con el fin de caracterizar la colección de
+# variedades se tomaron muestras de flores, hojas y frutos registrándose los principales caracteres
+# cuantitativos de estos órganos.
+# Las flores se recogieron en plena floración, eligiéndose aquellas totalmente desarrolladas y abiertas. Los
+# caracteres medidos fueron : tamaño de la flor (TAMFLOR), longitud de pétalo (LONGPET) y ancho de pétalo
+# (ANCHOPET).
+# Las hojas fueron muestreadas en el mes de mayo, se eligieron hojas adultas procedentes de ramos mixtos,
+# aproximadamente de la parte central de éstos, y se seleccionaron aquellas en buen estado fisiológico y
+# sanitario. Los caracteres medidos fueron: superficie de hoja (SUPHOJA), relación longitud y ancho de hoja
+# (LONANCHO), relación peciolo-limbo (PECLIMBO).
+# Por otra parte, los frutos se recolectaron maduros, tomando como referencia la desaparición total del color
+# verde, se muestrearon al azar de todas las caras del árbol. Los caracteres registrados fueron: peso de fruto
+# (PESOF), longitud de fruto (LONGF), ancho de fruto (ANCHOF), espesor de fruto (ESPESORF), peso del
+# endocarpio (PESOEND), longitud del endocarpio (LONGEND) y ancho del endocarpio (ANCHOEND).
+# El tamaño de la muestra para cada órgano y variedad fue de 25 repeticiones.
+# Todas los registros de peso están expresados en gramos, los de longitud en milímetros y superficie en
+# centímetros cuadrados
 
 
-dfEpf <- read.table(paste0(masterPath,"damas.txt"),
-                    sep="\t",
-                    dec=",",
-                    fileEncoding = "utf8",
-                    header = T)
+dfDamas<-dfDamas[,-1] 
 
-knitr::kable(head(dfEpf)) # head es para traer los principales
+# Se usan las variedades como nombres de fila y se quita la columna VAR,
+# para quedarnos solo con las 13 variables numéricas.
 
-# 18 variedades distintas de damasco
-# 13 columnas con variables
+# -------------------------------------------------------------
+# 2. EDA - Análisis Exploratorio de Datos
+# -------------------------------------------------------------
+# Para las variables del data set, se analizan las métricas estadísticas
 
-dfEpf<-dfEpf[,-1] #quitA la columna de VAR para quedarme solo con columnas numéricas 
+res <- pastecs::stat.desc(dfDamas) %>% as.matrix %>% as.data.frame %>% round(2)
+res <- format(res, scientific = FALSE)
+knitr::kable(data.frame(res), digits = 2)
 
-# -----------------
-# EDA
+# Podemos observar que no hay datos nulos ni vacíos. 
+# Se puede observar que en su mayoría la media y la mediana se aproximan, lo que
+# sugiere que las distribuciones son aproximadamente simetricas.
+# Se observan valores de varianza con una gran dispersión  (de 0 a 144), esto 
+# se debe a que estamos analizando datos con distintas escalas y unidades
 
-res<-pastecs::stat.desc(dfEpf) %>% as.matrix %>% as.data.frame %>% round(2)
-str(res)
+#####
+# ?# para ver con Lu! Que podemos decir de los coef. var. de este data set? 
+#####
 
-res = format(res, scientific = FALSE)
+# El coeficiente de variación nos permite comparar entre los
+# distintos valores del conjunto, ya que es una relacion adimensional (desv. estandar sobre la media).
+# Para este conjunto de datos podemos ver que son bastante homogeneos
+# (CV entre 6 a 14%). Las excepciones son el peso del endocarpio 
+# (PESOEND, CV = 42 %), el peso del fruto (PESOF, CV = 26 %) y la longitud del endocarpio 
+# (LONGEND, CV 21 %), que son las que más diferencian a las variedades. Podríamos decir
+# de antamano que son las que más diferencian a las variedades (a chequear si esta bien decir esto)
 
-knitr::kable(data.frame(res),digits = 2)
 
-#coef.var es el coeficiente de variación. Es el devío estandar sobre la media
+# -------------------------------------------------------------
+# 3. Correlaciones
+# -------------------------------------------------------------
+# Se realiza una matriz de correlación, dónde en la diagonal se
+# ven las variables con la distribución. Por debajo de la misma, los distintos
+# gráficos de dispersión y por encima los coeficientes de correlación.
 
-
-
-#-----
-# correlaciones
-
-pairs.panels(dfEpf, 
+pairs.panels(dfDamas, 
              method = "pearson", # correlation method
              hist.col = "#00AFBB",
              density = TRUE,  # show density plots
-             ellipses = F # show correlation ellipses
-)
+             ellipses = F) # show correlation ellipses
 
+# Los coeficiente de correlación más altos (0,87 - 0,99) se observan
+# en las variables relacionadas al tamaño del fruto (PESOF, ANCHOF, LONGF, ESPESORF).
+# Tiene sentido ya que un fruto más grande tiende a ser más pesado.
+# Asimismo,  hay un valor elevado de coeficiente de correlación entre el 
+# la longitud y el ancho del pétalo (LONGPET y ANCHOPET), como también en
+# la longitud del endocarpio y el ancho del endocarpio (LONGEND y ANCHOEND).
 
-#-----
-# boxplot
-
-dfInd<-stack(dfEpf)
-names(dfInd)<-c("valor","variable")
-ggplot(dfInd, aes(x = variable, y = valor)) +
+# -------------------------------------------------------------
+# 4. Boxplots
+# -------------------------------------------------------------
+# Se realizan los boxplots para ver descriptivamente las variables y detectar outliers. 
+dfBox <- stack(dfDamas)
+names(dfBox) <- c("valor", "variable")
+ggplot(dfBox, aes(x = variable, y = valor)) +
   geom_boxplot()+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+# Tal como se mencionó en el análisis exploratorio, es dificil comparar las variables,
+# ya que poseen distintas dimensiones y unidades. 
+# Sin embargo, lo que llama la atención, son las figuras de LONANCHO (relación longitud y ancho de hoja)
+# y PECLIMBO (relación peciolo-limbo), que presentan un rango muy bajo lo que provoca que 
+# el boxplot se vea más estrechado.
 
+# A su vez notamos que las variables SUPHOJA, PESOF, ANCHOF y ESPESORF presentan outliers. 
 
-#----
-# pca 
+# -------------------------------------------------------------
+# 5. PCA - Análisis de Componentes Principales
+# -------------------------------------------------------------
+# El PCA puede hacerse sobre la matriz de varianzas y covarianzas (datos solo
+# centrados) o sobre la matriz de correlaciones (datos centrados y
+# estandarizados). En este análisis se usa la matriz de CORRELACIONES porque
+# las variables están medidas en distintas unidades (g, mm, cm2 y cocientes
+# adimensionales) y con escalas muy diferentes: las varianzas van de 0,001
+# (PECLIMBO) a 144 (PESOF).
+# Con la matriz de covarianzas, las variables de mayor varianza dominarían las
+# componentes solo por su escala: en estos datos la primera componente explicaría
+# el 78 % de la variabilidad y estaría formada casi exclusivamente por PESOF,
+# dejando sin peso a las variables de flor y hoja. Al estandarizar, cada
+# variable aporta varianza 1 y todas participan en igualdad de condiciones;
+# lo que define las componentes pasa a ser la correlación entre variables.
 
-X <- dfEpf 
+X <- dfDamas 
 
-mediPca2 <- prcomp(as.matrix(X),center = T, scale. = T) # al usar la T en center y scale estamos usando la matriz R
-# la matriz R es la matriz de correlación y es la que tenemos que usar. Evitar usar en esta materia la de 
-# variancia y covariancia
+damaPca <- prcomp(as.matrix(X),center = T, scale. = T) 
 
-summary(mediPca2)
+summary(damaPca)
 
-plot(mediPca2)
-class(mediPca2)
+# Para nuestro análisis, debemos elegir cuantas componentes retener. 
+# A medida que se agreguen más componentes, la complejidad del análisis aumenta 
+# ya que se deben empezar a considerar más combinaciones entre las componentes. 
 
-# usamos las primeras 3
+# Se observa que la componente PC1 acumula el 54,8 % de la variabilidad total y la PC2 un
+# # 15,9 % extra, dando un acumulado de 70,7 %. Para nuestro caso, consideramos 
+# que es suficiente porque llegamos al umbral de 70-80 % de variabilidad total. 
 
-#----
-# matriz de cargas
+# A su vez, según el criterio de Kaiser (autovalores > 1), podríamos incluir hasta la PC4,
+# cuyo autovalor es 1,01 y su variabilidad acumulada es 87,9 %. 
+# Sin embargo decidimos quedarnos hasta la PC2/PC3 (a chequear) porque la variabilidad
+# acumulada es de 80,1 %, la cual es suficiente. Además, sumar una componente más,
+# agregaría un grado de complejidad extra al análisis.
+
+# Por último, podemos visualizar los valores de las componentes a elegir de manera
+# descriptiva con un scree plot. Puede observarse una fuerte caida desde PC1 a PC2,
+# y luego luego la curva se aplana a partir de PC3-PC4. Por lo considerar hasta
+# PC2/PC3 (a chequar) sería suficiente para nuestro análisis.
+
+plot(damaPca) # a este gráfico estaría bueno ponerle los valores sobre las barras
+
+# Terminar de definir si usamos 2 o 3 componentes.
+
+# -------------------------------------------------------------
+# 6. MATRIZ DE CARGAS
+# -------------------------------------------------------------
 
 # matriz de los vectores propios
-knitr::kable(as.data.frame(unclass(mediPca2$rotation)))
+knitr::kable(as.data.frame(unclass(damaPca$rotation)))
 
 # son las observaciones valorizadas 
-knitr::kable(mediPca2$x)
+knitr::kable(damaPca$x)
 
-autoplot(mediPca2, 
-         data = damas, 
-         colour = 'VAR', 
-         loadings = TRUE, 
-         loadings.label = TRUE, 
-         loadings.label.size = 3)
-
-
-#---
 library(ggfortify)
 library(plotly)
 
-p <- autoplot(mediPca2,
+p <- autoplot(damaPca,
               data = damas,
               colour = 'VAR',
               loadings = TRUE,
@@ -118,6 +190,3 @@ p <- autoplot(mediPca2,
 ggplotly(p)
 
 # --------
-
-asd <- dfMundo[,2:ncol(dfMundo)]
-mundoPca <- FactoMineR::PCA(X = asd, scale.unit = T,ncp = ncol(X), graph = T)
