@@ -66,24 +66,19 @@ res <- pastecs::stat.desc(dfDamas) %>% as.matrix %>% as.data.frame %>% round(2)
 res <- format(res, scientific = FALSE)
 knitr::kable(data.frame(res), digits = 2)
 
-# Podemos observar que no hay datos nulos ni vacíos. 
+# Podemos observar que no hay valores faltantes.
 # Se puede observar que en su mayoría la media y la mediana se aproximan, lo que
 # sugiere que las distribuciones son aproximadamente simetricas.
-# Se observan valores de varianza con una gran dispersión  (de 0 a 144), esto 
-# se debe a que estamos analizando datos con distintas escalas y unidades
+# Se observan valores de varianza con una gran dispersión (de 0 a 144), esto 
+# se debe a que estamos analizando datos con distintas escalas y unidades.
 
-#####
-# ?# para ver con Lu! Que podemos decir de los coef. var. de este data set? 
-#####
-
-# El coeficiente de variación nos permite comparar entre los
-# distintos valores del conjunto, ya que es una relacion adimensional (desv. estandar sobre la media).
+# El coeficiente de variación nos permite comparar la variabilidad de los
+# distintos atributos, aun cuando este medidos en distintas unidades o la
+# magnitud que tome cada uno de ellos varie.
 # Para este conjunto de datos podemos ver que son bastante homogeneos
 # (CV entre 6 a 14%). Las excepciones son el peso del endocarpio 
-# (PESOEND, CV = 42 %), el peso del fruto (PESOF, CV = 26 %) y la longitud del endocarpio 
-# (LONGEND, CV 21 %), que son las que más diferencian a las variedades. Podríamos decir
-# de antamano que son las que más diferencian a las variedades (a chequear si esta bien decir esto)
-
+# (PESOEND, CV = 42 %), el peso del fruto (PESOF, CV = 26 %) y la longitud del 
+# endocarpio (LONGEND, CV 21 %), que son las que más diferencian a las variedades.
 
 # -------------------------------------------------------------
 # 3. Correlaciones
@@ -101,9 +96,13 @@ pairs.panels(dfDamas,
 # Los coeficiente de correlación más altos (0,87 - 0,99) se observan
 # en las variables relacionadas al tamaño del fruto (PESOF, ANCHOF, LONGF, ESPESORF).
 # Tiene sentido ya que un fruto más grande tiende a ser más pesado.
-# Asimismo,  hay un valor elevado de coeficiente de correlación entre el 
+# Asimismo, hay un valor elevado de coeficiente de correlación entre el 
 # la longitud y el ancho del pétalo (LONGPET y ANCHOPET), como también en
 # la longitud del endocarpio y el ancho del endocarpio (LONGEND y ANCHOEND).
+
+# Con respecto a los gráficos de dispersión que se presentan debajo de la
+# diagonal del gráfico, hay algunas relaciones que no son lineales, por ejemplo
+# PECLIMBO con PESOF, o como PESOEND con ANCHOPE.
 
 # -------------------------------------------------------------
 # 4. Boxplots
@@ -118,13 +117,21 @@ ggplot(dfBox, aes(x = variable, y = valor)) +
 # ya que poseen distintas dimensiones y unidades. 
 # Sin embargo, lo que llama la atención, son las figuras de LONANCHO (relación longitud y ancho de hoja)
 # y PECLIMBO (relación peciolo-limbo), que presentan un rango muy bajo lo que provoca que 
-# el boxplot se vea más estrechado.
+# el boxplot se vea más estrecho.
 
-# A su vez notamos que las variables SUPHOJA, PESOF, ANCHOF y ESPESORF presentan outliers. 
+# A su vez, notamos que las variables SUPHOJA, PESOF, ANCHOF y ESPESORF presentan outliers. 
 
 # -------------------------------------------------------------
 # 5. PCA - Análisis de Componentes Principales
 # -------------------------------------------------------------
+# Dado que en el EDA se observaron varias relaciones lineales entre las variables
+# con valores de coeficientes de correlación altos, se decide avanzar con el 
+# PCA para reducir la dimensionalidad, capturando la mayor variabilidad posible
+# del conjunto de datos. Queremos mencionar que somos  conscientes que existen 
+# algunas relaciones no lineales y somos conscientes que ACP no logra captar esta 
+# información al momento de reducir la variabilidad.
+
+# COMPARAR CON DIAPOSITIVAS ANTES DE CONCLUIR
 # El PCA puede hacerse sobre la matriz de varianzas y covarianzas (datos solo
 # centrados) o sobre la matriz de correlaciones (datos centrados y
 # estandarizados). En este análisis se usa la matriz de CORRELACIONES porque
@@ -181,7 +188,7 @@ library(ggfortify)
 library(plotly)
 
 p <- autoplot(damaPca,
-              data = damas,
+              data = dfDamas, ### ACA HAY UN ERROR Y NO LEE LA DATA.
               colour = 'VAR',
               loadings = TRUE,
               loadings.label = TRUE,
