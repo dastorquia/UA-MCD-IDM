@@ -197,3 +197,4 @@ p <- autoplot(damaPca,
 ggplotly(p)
 
 # --------
+# Prueba
