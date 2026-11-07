@@ -132,18 +132,13 @@ ggplot(dfBox, aes(x = variable, y = valor)) +
 # información al momento de reducir la variabilidad.
 
 # COMPARAR CON DIAPOSITIVAS ANTES DE CONCLUIR
-# El PCA puede hacerse sobre la matriz de varianzas y covarianzas (datos solo
-# centrados) o sobre la matriz de correlaciones (datos centrados y
-# estandarizados). En este análisis se usa la matriz de CORRELACIONES porque
+# El PCA puede hacerse sobre la matriz de varianzas y covarianzas o sobre la 
+# matriz de correlaciones. En este análisis se usa la matriz de CORRELACIONES porque
 # las variables están medidas en distintas unidades (g, mm, cm2 y cocientes
 # adimensionales) y con escalas muy diferentes: las varianzas van de 0,001
 # (PECLIMBO) a 144 (PESOF).
 # Con la matriz de covarianzas, las variables de mayor varianza dominarían las
-# componentes solo por su escala: en estos datos la primera componente explicaría
-# el 78 % de la variabilidad y estaría formada casi exclusivamente por PESOF,
-# dejando sin peso a las variables de flor y hoja. Al estandarizar, cada
-# variable aporta varianza 1 y todas participan en igualdad de condiciones;
-# lo que define las componentes pasa a ser la correlación entre variables.
+# componentes solo por su escala. 
 
 X <- dfDamas 
 
@@ -155,7 +150,7 @@ summary(damaPca)
 # A medida que se agreguen más componentes, la complejidad del análisis aumenta 
 # ya que se deben empezar a considerar más combinaciones entre las componentes. 
 
-# Se observa que la componente PC1 acumula el 54,8 % de la variabilidad total y la PC2 un
+# Se observa que la componente PC1 explica el 54,8 % de la variabilidad total y la PC2 un
 # # 15,9 % extra, dando un acumulado de 70,7 %. Para nuestro caso, consideramos 
 # que es suficiente porque llegamos al umbral de 70-80 % de variabilidad total. 
 
@@ -165,12 +160,15 @@ summary(damaPca)
 # acumulada es de 80,1 %, la cual es suficiente. Además, sumar una componente más,
 # agregaría un grado de complejidad extra al análisis.
 
-# Por último, podemos visualizar los valores de las componentes a elegir de manera
+# Por último, otro criterio para elegir la cantidad de componentes es visualizar los 
+# valores de las componentes a elegir de manera
 # descriptiva con un scree plot. Puede observarse una fuerte caida desde PC1 a PC2,
 # y luego luego la curva se aplana a partir de PC3-PC4. Por lo considerar hasta
 # PC2/PC3 (a chequar) sería suficiente para nuestro análisis.
 
 plot(damaPca) # a este gráfico estaría bueno ponerle los valores sobre las barras
+
+fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 50))
 
 # Terminar de definir si usamos 2 o 3 componentes.
 
@@ -181,20 +179,96 @@ plot(damaPca) # a este gráfico estaría bueno ponerle los valores sobre las bar
 # matriz de los vectores propios
 knitr::kable(as.data.frame(unclass(damaPca$rotation)))
 
-# son las observaciones valorizadas 
+# INTERPRETACIÓN: Observando el vector propio de carga para la componente principal 1 se observa que hay
+# un ordenamiento natural de las observaciones ya que la mayoría de las variables tienen asociado un signo
+# negativo y, las que tienen signo positivo, la magnitud es muy pequeña. Estarán más a la izquierda del gráfico
+# aquellas variedades que presenten valores grandes en las variables relacionadas con el tamaño tanto de la 
+# flor como del fruto y del endocarpio.
+# En cuanto a la CP2 tomará valores altos cuando las variedades tengan superficie de hoja grande y también valores
+# altos en las variables relacionadas al tamaño de la flor y tomará valores grandes negativos con respecto a esa componente
+# cuando los frutos sean grandes. 
+# Resumiendo en el segundo cuadrante estarán las variaedades que presenten valores altos en 
+# las variables relacionadas con el tamaño de la flor y presenten hojas grandes. En el tercer cuadrante estarán
+# aquellas con valores altos del tamaño en el tamaño del fruto y en el endorcarpio.
+# La variedad BLANCO se caracteriza por tener flores y hojas grandes
+# La variedad TADEO tiene frutos grandes
+# La variedad GABACHET tiene frutos y hojas pequenas.
+# Las variedades GANDIA, GINESTA y PALABRAS se caracterizan por tener flores pequeñas.
+# La variedad CANINO tiene hojas pequeñas y flores pequeñas.
+# CHEQUEAR LAS INTERPRETACIONES. CORREGIR
+
+# FALTA MENCIONAR EL DAMASCO DE JARDÍN QUE ESTÁ EN EL PRIMER CUADRANTE. 
 knitr::kable(damaPca$x)
 
 library(ggfortify)
 library(plotly)
 
 p <- autoplot(damaPca,
-              data = dfDamas, ### ACA HAY UN ERROR Y NO LEE LA DATA.
-              colour = 'VAR',
+              data = damas, 
+              colour = 'VAR', ### PUEDE NO TENER MUCHO SENTIDO COLOREAR POR VAR PORQUE HAY UNA OBS POR VAR 
               loadings = TRUE,
               loadings.label = TRUE,
               loadings.label.size = 3)
 
 ggplotly(p)
 
-# --------
-# Prueba
+##################### PCA con factoMineR ############ 
+# NOTA: El resultado es el mismo (gráficos más lindos que prcomp) pero tener en cuenta que los resultados dan rotados 180|C
+# PODEMOS PRESENTARLO EXPLICANDO ESTO O PRESENTAR LA SALIDA DE UNO. TENER EN CUENTA QUE LAS OBSERVACIONES CAMBIAN DE CUADRANTE AUNQUE
+# EL LA RELACIÓN ENTRE LAS VARIABLES ES LA MISMA
+#################################################
+
+X <- dfDamas
+damaPca <- FactoMineR::PCA(X = X, scale.unit = T, ncp = ncol(X), graph = T)
+
+# Matriz de vectores propios
+
+damaPca$svd$V
+
+# ind <- get_pca_ind(damaPca)
+# ind
+# 
+# p.1 <- fviz_pca_ind(damaPca, col.ind = "coord", 
+#              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+#              repel = TRUE # Avoid text overlapping (slow if many points)
+# )
+
+
+
+# Interpretación del gráfico variables - PCA
+
+var <- get_pca_var(damaPca)
+
+tabla_cos2 <- knitr::kable(var$cos2)
+
+tabla_contrib <- knitr::kable(var$contrib)
+
+tabla_coord <- knitr::kable(var$coord)
+
+corrplot(var$contrib, is.corr=FALSE)  # Otra forma de visualizar la contribución
+
+
+
+fviz_pca_var(damaPca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE # Avoid text overlapping
+)
+
+# A partir del análisis del gráfico de variables - PCA y de la tabla tabla_contrib puede 
+# observarse que las variables que describen las características de la flor,
+# del fruto y del endocarpio tiene alto aporte a la componente CP1. Además observando el ángulo
+# formado por los vectores que representan dichas variables se observa una alta correlación 
+# entre los distintos grupos de variables mencionadas. En el segundo cuadrante del plano cartesiano se 
+# encuentran altamente correlacionadas todas las variables que describen los atributos de la flor 
+# (ANCHOF, PESO F, ESPESORF, LONANCHO y LONGF) y se observan dos grupos de variables muy correlacionadas
+# uno que describen las características del endocarpio (PESOEND, ANCHOEND, LONGEND) y otro las de los pétalos
+# (LONGPET y ANCHOPET). 
+# Analizando la PC2 puede observarse que el mayor aporte a dicha componente está dado por las variables 
+# LONGPET, ANCHOPET Y SUPHOJA. 
+# cuadrante aquellas relacionadas con las características de los pétalos. Mientas que puede observarse un tercer grupo de
+# variables altamente correlacionadas que son aquellas que se observa que 
+# están altamente correlaciondas (los ángulos formados por los respetivos vectores son pequeños) y tienen 
+# una alta contribución a la dirección de la PC1 ya que el cos2 es alto. Por otra parte, las variables  
+# PESOEND, LONGEND Y ANCHOEND también se están altamente correlacionadas tienen una alta 
+# VER SI AGREGAR PC3 QUE TIENE DONDE PECLIMBO TIENE MUCHA CONTRIBUCIÓN.
+
