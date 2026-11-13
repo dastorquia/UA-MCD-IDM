@@ -23,7 +23,7 @@ for (paquete in listofpackages) {
 # -------------------------------------------------------------
 # Lectura de datos
 # -------------------------------------------------------------
-masterPath <- "~/MCD-IDM/UA-MCD-IDM/TP2/"
+setwd("~/UA-MCD-IDM/TP2")
 
 # Se usan las variedades como nombres de fila y se quita la columna VAR,
 # para quedarnos solo con las 13 variables numéricas.
@@ -53,9 +53,25 @@ knitr::kable(head(dfDamas))   # primeras filas del dataset
 # El tamaño de la muestra para cada órgano y variedad fue de 25 repeticiones.
 # Cada fila representa una variedad y cada valor corresponde al resumen (promedio) de esas 25 repeticiones.
 # Todas los registros de peso están expresados en gramos, los de longitud en milímetros y superficie en
-# centímetros cuadrados
+# centímetros cuadrados.
 
-
+# -------------------------------------------------------------
+# Resumen de variables
+# -------------------------------------------------------------
+# VAR: Tipo de variedad de damasco | Unidad: [Adimensional]
+# TAMFLOR: Tamaño de la flor | Unidad: [mm]
+# LONGPET: Longitud del pétalo | Unidad: [mm]
+# ANCHOPET: Ancho del pétalo | Unidad: [mm]
+# SUPHOJA: Superficie de hoja | Unidad: [cm^2]
+# LONANCHO: Relación longitud y ancho de hoja | Unidad: [Adimensional]
+# PECLIMBO: Relación peciolo-limbo | Unidad: [Adimensional]
+# PESOF: Peso del fruto | Unidad: [g]
+# LONGF: Longitud del fruto | Unidad: [mm]
+# ANCHOF: Ancho del fruto | Unidad: [mm]
+# ESPESORF: Espesor del fruto | Unidad: [mm]
+# PESOEND: Peso del endocarpio | Unidad: [g]
+# LONGEND: Longitud del endocarpio | Unidad: [mm]
+# ANCHOEND: Ancho del endocarpio | Unidad: [mm]
 
 # -------------------------------------------------------------
 # 1. EDA - Análisis Exploratorio de Datos
@@ -70,22 +86,37 @@ knitr::kable(data.frame(res), digits = 2)
 # Podemos observar que no hay valores faltantes.
 # Se puede observar que en su mayoría la media y la mediana se aproximan, lo que
 # sugiere que las distribuciones son aproximadamente simetricas.
-# 
-###########################################################################
-# CREO QUE ADEMAS DE PRESENTAR LA TABLA DEBERÍAMOS DESCRIBIR MEDIANA MEDIA MAX Y MIN 
-# COMO PIDE EN EL ENUNCIADO
-############################################################################
-#
+
 # Se observan valores de varianza con una gran dispersión (de 0 a 144), esto 
 # se debe a que estamos analizando datos con distintas escalas y unidades.
 
 # El coeficiente de variación nos permite comparar la variabilidad de los
-# distintos atributos, aun cuando este medidos en distintas unidades o la
-# magnitud que tome cada uno de ellos varie.
+# distintos atributos, aun cuando esten medidos en distintas unidades o la
+# magnitud que tomen cada uno de ellos varie.
 # Para este conjunto de datos podemos ver que son bastante homogeneos
 # (CV entre 6 a 14%). Las excepciones son el peso del endocarpio 
 # (PESOEND, CV = 42 %), el peso del fruto (PESOF, CV = 26 %) y la longitud del 
 # endocarpio (LONGEND, CV 21 %), que son las que más diferencian a las variedades.
+
+# -------------------------------------------------------------
+# Boxplots
+# -------------------------------------------------------------
+# Se realizan los boxplots para ver descriptivamente las variables y detectar outliers. 
+dfBox <- stack(dfDamas[,-1])
+names(dfBox) <- c("valor", "variable")
+ggplot(dfBox, aes(x = variable, y = valor)) +
+  geom_boxplot()+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Tal como se mencionó en el análisis exploratorio, es dificil comparar las variables,
+# ya que poseen distintas dimensiones y unidades. 
+# Sin embargo, lo que llama la atención, son las figuras de LONANCHO (relación longitud y ancho de hoja)
+# y PECLIMBO (relación peciolo-limbo), que presentan un rango muy bajo lo que provoca que 
+# el boxplot se vea más estrecho.
+
+# A su vez, notamos que las variables SUPHOJA, PESOF, ANCHOF y ESPESORF presentan outliers. 
+
+# Vamos a utilizar el conjunto completo del dataset, incluyendo los outliers, y
+# a su vez, no hizo falta descartar ningún registro por ausencia de datos faltantes.
 
 # -------------------------------------------------------------
 # Correlaciones
@@ -112,25 +143,6 @@ pairs.panels(dfDamas[,-1],
 # diagonal del gráfico, hay algunas relaciones que no son lineales, por ejemplo
 # PECLIMBO con PESOF, o como PESOEND con ANCHOPE.
 
-
-# -------------------------------------------------------------
-# Boxplots
-# -------------------------------------------------------------
-# Se realizan los boxplots para ver descriptivamente las variables y detectar outliers. 
-dfBox <- stack(dfDamas[,-1])
-names(dfBox) <- c("valor", "variable")
-ggplot(dfBox, aes(x = variable, y = valor)) +
-  geom_boxplot()+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-
-
-# Tal como se mencionó en el análisis exploratorio, es dificil comparar las variables,
-# ya que poseen distintas dimensiones y unidades. 
-# Sin embargo, lo que llama la atención, son las figuras de LONANCHO (relación longitud y ancho de hoja)
-# y PECLIMBO (relación peciolo-limbo), que presentan un rango muy bajo lo que provoca que 
-# el boxplot se vea más estrecho.
-
-# A su vez, notamos que las variables SUPHOJA, PESOF, ANCHOF y ESPESORF presentan outliers. 
-
 # -------------------------------------------------------------
 # 2. PCA - Análisis de Componentes Principales
 # -------------------------------------------------------------
@@ -138,9 +150,8 @@ ggplot(dfBox, aes(x = variable, y = valor)) +
 # con valores de coeficientes de correlación altos, se decide avanzar con el 
 # PCA para reducir la dimensionalidad, capturando la mayor variabilidad posible
 # del conjunto de datos. Queremos mencionar que somos conscientes que existen 
-# algunas relaciones no lineales y que ACP no logra captar esta 
+# algunas relaciones no lineales y que PCA no logra captar esta 
 # información al momento de reducir la variabilidad.
-
 
 # El PCA puede hacerse sobre la matriz de varianzas y covarianzas o sobre la 
 # matriz de correlaciones. En este análisis se usa la matriz de CORRELACIONES porque
@@ -178,26 +189,23 @@ knitr::kable(round(eig, 2))   # autovalor, % varianza, % acumulado
 # Criterio 2: Criterio de Kaiser
 # Según este criterio (autovalores > 1), podríamos incluir hasta la PC4,
 # cuyo autovalor es 1,01 y su variabilidad acumulada es 87,9 %. 
-# Sin embargo decidimos quedarnos hasta la PC2/PC3 (a chequear) porque la variabilidad
+# Sin embargo decidimos quedarnos hasta la PC2/PC3 porque la variabilidad
 # acumulada es de 80,1 %, la cual es suficiente. Además, sumar una componente más,
 # agregaría un grado de complejidad extra al análisis.
 
-
-# Scree Plot
-
+# -------------------------------------------------------------
+# Scree plot - Gráfico de sedimentación
+# -------------------------------------------------------------
 fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 60))
 
 # Criterio 3: Scree plot 
 # Por último, otro criterio para elegir la cantidad de componentes es visualizar los 
 # valores de las componentes a elegir de manera
 # descriptiva con un scree plot. Puede observarse una fuerte caida desde PC1 a PC2,
-# y luego luego la curva se aplana a partir de PC3-PC4. Por lo considerar hasta
-# PC2/PC3 (a chequar) sería suficiente para nuestro análisis.
+# y luego la curva se aplana a partir de PC3-PC4.
 
 # A partir del análisis de los 3 criterios mencionados puede pensarse que es 
-# recomendable retener entre dos y tres CP.
-
-# Para terminar de definir si usar PC3
+# recomendable retener las primeras 3 componentes principales.
 
 var <- get_pca_var(damaPca)          # funciona con el objeto de prcomp
 
@@ -206,24 +214,17 @@ round(rowSums(var$cos2[, 1:2]), 2)   # (b) cos2 acumulado en PC1+PC2, dice qué 
 round(var$contrib[, 1:4], 1)         # (c) contribución (%) de cada variable a cada PC
 round(damaPca$rotation[, 3:4], 2)    # (d) cargas de PC3 y PC4
 
-# “PECLIMBO tiene cos² = 0,10 en PC1–PC2”. Es el resultado de (b).
-# Sus correlaciones son −0,13 con PC1 y −0,28 con PC2, así que 0,13² + 0,28² ≈ 0,10.
+# PECLIMBO tiene cos² = 0,10 en PC1–PC2. Es el resultado de (b).
 # Quiere decir que con solo dos componentes se pierde el 90 % de lo que varía PECLIMBO.
-# Se ve también en el gráfico de variables: su flecha es muy corta.
 
-# “PC3 está dominada por PECLIMBO”. Sale de (c) y (d). 
-# En PC3 la carga de PECLIMBO es 0,76, y contribuye 57,4 % de esa componente 
-# (el resto está repartido: LONANCHO 13 %, PESOEND 10 %). 
-# Su correlación con PC3 es 0,84, o sea cos² = 0,71.
-# Agregar PC3 tiene sentido: PECLIMBO pasa de 0,10 a 0,81 de representación acumulada.
-# Sin PC3, esa variable queda casi fuera del análisis.
-
+# PC3 está mayormente conformada por PECLIMBO. Es el resultado de (c) y (d). 
+# En PC3 la carga de PECLIMBO es 0,76, y contribuye 57,4 % de esa componente. 
+# Al agregar PC3, pasamos a capturar el 80,15% de la variabilidad de las componentes.
 
 # -------------------------------------------------------------
 # 6. MATRIZ DE CARGAS
 # -------------------------------------------------------------
-
-# matriz de los vectores propios
+# Matriz de los vectores propios
 knitr::kable(as.data.frame(unclass(damaPca$rotation)))
 
 # INTERPRETACIÓN: Observando el vector propio de carga para la componente principal 1 se observa que hay
