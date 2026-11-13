@@ -21,7 +21,7 @@ for (paquete in listofpackages) {
 }
 
 # -------------------------------------------------------------
-# 1. Lectura de datos
+# Lectura de datos
 # -------------------------------------------------------------
 masterPath <- "~/MCD-IDM/UA-MCD-IDM/TP2/"
 
@@ -31,7 +31,7 @@ dfDamas <- read.table(paste0("damas.txt"),
                       sep = "\t",
                       dec = ",",
                       header = TRUE,
-                      row.names = 1,
+                     # row.names = 1,  
                       fileEncoding = "UTF-8")
 
 knitr::kable(head(dfDamas))   # primeras filas del dataset
@@ -58,11 +58,11 @@ knitr::kable(head(dfDamas))   # primeras filas del dataset
 
 
 # -------------------------------------------------------------
-# 2. EDA - Análisis Exploratorio de Datos
+# 1. EDA - Análisis Exploratorio de Datos
 # -------------------------------------------------------------
 # Para las variables del data set, se analizan las métricas estadísticas
 
-res <- pastecs::stat.desc(dfDamas) %>% as.matrix %>% as.data.frame %>% round(2)
+res <- pastecs::stat.desc(dfDamas[,-1]) %>% as.matrix %>% as.data.frame %>% round(2)
 res <- format(res, scientific = FALSE)
 knitr::kable(data.frame(res), digits = 2)
 
@@ -70,6 +70,12 @@ knitr::kable(data.frame(res), digits = 2)
 # Podemos observar que no hay valores faltantes.
 # Se puede observar que en su mayoría la media y la mediana se aproximan, lo que
 # sugiere que las distribuciones son aproximadamente simetricas.
+# 
+###########################################################################
+# CREO QUE ADEMAS DE PRESENTAR LA TABLA DEBERÍAMOS DESCRIBIR MEDIANA MEDIA MAX Y MIN 
+# COMO PIDE EN EL ENUNCIADO
+############################################################################
+#
 # Se observan valores de varianza con una gran dispersión (de 0 a 144), esto 
 # se debe a que estamos analizando datos con distintas escalas y unidades.
 
@@ -82,13 +88,14 @@ knitr::kable(data.frame(res), digits = 2)
 # endocarpio (LONGEND, CV 21 %), que son las que más diferencian a las variedades.
 
 # -------------------------------------------------------------
-# 3. Correlaciones
+# Correlaciones
 # -------------------------------------------------------------
 # Se realiza una matriz de correlación, dónde en la diagonal se
-# ven las variables con la distribución. Por debajo de la misma, los distintos
+# ven las variables con su histograma y correspondiente 
+# curva de densidad. Por debajo de la misma, los distintos
 # gráficos de dispersión y por encima los coeficientes de correlación.
 
-pairs.panels(dfDamas, 
+pairs.panels(dfDamas[,-1], 
              method = "pearson", # correlation method
              hist.col = "#00AFBB",
              density = TRUE,  # show density plots
@@ -107,10 +114,10 @@ pairs.panels(dfDamas,
 
 
 # -------------------------------------------------------------
-# 4. Boxplots
+# Boxplots
 # -------------------------------------------------------------
 # Se realizan los boxplots para ver descriptivamente las variables y detectar outliers. 
-dfBox <- stack(dfDamas)
+dfBox <- stack(dfDamas[,-1])
 names(dfBox) <- c("valor", "variable")
 ggplot(dfBox, aes(x = variable, y = valor)) +
   geom_boxplot()+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
@@ -125,16 +132,16 @@ ggplot(dfBox, aes(x = variable, y = valor)) +
 # A su vez, notamos que las variables SUPHOJA, PESOF, ANCHOF y ESPESORF presentan outliers. 
 
 # -------------------------------------------------------------
-# 5. PCA - Análisis de Componentes Principales
+# 2. PCA - Análisis de Componentes Principales
 # -------------------------------------------------------------
 # Dado que en el EDA se observaron varias relaciones lineales entre las variables
 # con valores de coeficientes de correlación altos, se decide avanzar con el 
 # PCA para reducir la dimensionalidad, capturando la mayor variabilidad posible
-# del conjunto de datos. Queremos mencionar que somos  conscientes que existen 
-# algunas relaciones no lineales y somos conscientes que ACP no logra captar esta 
+# del conjunto de datos. Queremos mencionar que somos conscientes que existen 
+# algunas relaciones no lineales y que ACP no logra captar esta 
 # información al momento de reducir la variabilidad.
 
-# COMPARAR CON DIAPOSITIVAS ANTES DE CONCLUIR
+
 # El PCA puede hacerse sobre la matriz de varianzas y covarianzas o sobre la 
 # matriz de correlaciones. En este análisis se usa la matriz de CORRELACIONES porque
 # las variables están medidas en distintas unidades (g, mm, cm2 y cocientes
@@ -143,46 +150,52 @@ ggplot(dfBox, aes(x = variable, y = valor)) +
 # Con la matriz de covarianzas, las variables de mayor varianza dominarían las
 # componentes solo por su escala. 
 
-X <- dfDamas 
+X <- dfDamas[,-1]
 
 damaPca <- prcomp(as.matrix(X),center = T, scale. = T) 
 
 summary(damaPca)
 
+# Tabla de autovalores
+
+eig <- get_eigenvalue(damaPca)
+knitr::kable(round(eig, 2))   # autovalor, % varianza, % acumulado
+
+# eigenvalue: el autovalor de cada componente (7,13; 2,06; 1,23; 1,01...)
+# variance.percent: el % de varianza que explica esa componente (54,8; 15,9; 9,4; 7,8...)
+# cumulative.variance.percent: el % acumulado (54,8; 70,7; 80,2; 87,9...)
 
 # Para nuestro análisis, debemos elegir cuantas componentes retener. 
 # A medida que se agreguen más componentes, la complejidad del análisis aumenta 
 # ya que se deben empezar a considerar más combinaciones entre las componentes. 
 
+# Criterio 1: Seleccionar los autovalores cuyo porsentaje de variabilidad explicada 
+# acumule entre 70-80%
 # Se observa que la componente PC1 explica el 54,8 % de la variabilidad total y la PC2 un
-# # 15,9 % extra, dando un acumulado de 70,7 %. Para nuestro caso, consideramos 
+# 15,9 % extra, dando un acumulado de 70,7 %. Para nuestro caso, consideramos 
 # que es suficiente porque llegamos al umbral de 70-80 % de variabilidad total. 
 
-# A su vez, según el criterio de Kaiser (autovalores > 1), podríamos incluir hasta la PC4,
+# Criterio 2: Criterio de Kaiser
+# Según este criterio (autovalores > 1), podríamos incluir hasta la PC4,
 # cuyo autovalor es 1,01 y su variabilidad acumulada es 87,9 %. 
 # Sin embargo decidimos quedarnos hasta la PC2/PC3 (a chequear) porque la variabilidad
 # acumulada es de 80,1 %, la cual es suficiente. Además, sumar una componente más,
 # agregaría un grado de complejidad extra al análisis.
 
+
+# Scree Plot
+
+fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 60))
+
+# Criterio 3: Scree plot 
 # Por último, otro criterio para elegir la cantidad de componentes es visualizar los 
 # valores de las componentes a elegir de manera
 # descriptiva con un scree plot. Puede observarse una fuerte caida desde PC1 a PC2,
 # y luego luego la curva se aplana a partir de PC3-PC4. Por lo considerar hasta
 # PC2/PC3 (a chequar) sería suficiente para nuestro análisis.
 
-plot(damaPca) # a este gráfico estaría bueno ponerle los valores sobre las barras
-
-fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 60))
-
-# Tabla con los autovalores
-# eigenvalue: el autovalor de cada componente (7,13; 2,06; 1,23; 1,01...)
-# variance.percent: el % de varianza que explica esa componente (54,8; 15,9; 9,4; 7,8...)
-# cumulative.variance.percent: el % acumulado (54,8; 70,7; 80,2; 87,9...)
-eig <- get_eigenvalue(damaPca)
-knitr::kable(round(eig, 2))   # autovalor, % varianza, % acumulado
-
-# Se descarta PC4 ya que apenas supera Kaiser (1,011), valor observado en la tabla (Dim.4 eigenvalue 1.01)
-# Kaiser dice “retené autovalores > 1”, y 1,011 lo cumple por un margen mínimo.
+# A partir del análisis de los 3 criterios mencionados puede pensarse que es 
+# recomendable retener entre dos y tres CP.
 
 # Para terminar de definir si usar PC3
 
@@ -238,35 +251,36 @@ library(ggfortify)
 library(plotly)
 
 p <- autoplot(damaPca,
-              data = damas, 
+              data = dfDamas, 
               colour = 'VAR', ### PUEDE NO TENER MUCHO SENTIDO COLOREAR POR VAR PORQUE HAY UNA OBS POR VAR 
               loadings = TRUE,
               loadings.label = TRUE,
               loadings.label.size = 3)
 
 ggplotly(p)
-
-##################### PCA con factoMineR ############ 
-# NOTA: El resultado es el mismo (gráficos más lindos que prcomp) pero tener en cuenta que los resultados dan rotados 180|C
-# PODEMOS PRESENTARLO EXPLICANDO ESTO O PRESENTAR LA SALIDA DE UNO. TENER EN CUENTA QUE LAS OBSERVACIONES CAMBIAN DE CUADRANTE AUNQUE
-# EL LA RELACIÓN ENTRE LAS VARIABLES ES LA MISMA
-#################################################
-
-X <- dfDamas
-damaPca <- FactoMineR::PCA(X = X, scale.unit = T, ncp = ncol(X), graph = T)
-
-# Matriz de vectores propios
-
-damaPca$svd$V
-
-# ind <- get_pca_ind(damaPca)
-# ind
+#######################################################################
+# ELIMINARIA TODO LO QUE SIGUE
+# ##################### PCA con factoMineR ############ 
+# # NOTA: El resultado es el mismo (gráficos más lindos que prcomp) pero tener en cuenta que los resultados dan rotados 180|C
+# # PODEMOS PRESENTARLO EXPLICANDO ESTO O PRESENTAR LA SALIDA DE UNO. TENER EN CUENTA QUE LAS OBSERVACIONES CAMBIAN DE CUADRANTE AUNQUE
+# # EL LA RELACIÓN ENTRE LAS VARIABLES ES LA MISMA
+# #################################################
 # 
-# p.1 <- fviz_pca_ind(damaPca, col.ind = "coord", 
-#              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-#              repel = TRUE # Avoid text overlapping (slow if many points)
-# )
-
+# X <- dfDamas
+# damaPca <- FactoMineR::PCA(X = X, scale.unit = T, ncp = ncol(X), graph = T)
+# 
+# # Matriz de vectores propios
+# 
+# damaPca$svd$V
+# 
+# # ind <- get_pca_ind(damaPca)
+# # ind
+# # 
+# # p.1 <- fviz_pca_ind(damaPca, col.ind = "coord", 
+# #              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+# #              repel = TRUE # Avoid text overlapping (slow if many points)
+# # )
+# ##########################################################################
 
 
 # Interpretación del gráfico variables - PCA
@@ -289,20 +303,15 @@ fviz_pca_var(damaPca, col.var = "cos2",
 )
 
 # A partir del análisis del gráfico de variables - PCA y de la tabla tabla_contrib puede 
-# observarse que las variables que describen las características de la flor,
-# del fruto y del endocarpio tiene alto aporte a la componente CP1. Además observando el ángulo
-# formado por los vectores que representan dichas variables se observa una alta correlación 
-# entre los distintos grupos de variables mencionadas. En el segundo cuadrante del plano cartesiano se 
-# encuentran altamente correlacionadas todas las variables que describen los atributos de la flor 
-# (ANCHOF, PESO F, ESPESORF, LONANCHO y LONGF) y se observan dos grupos de variables muy correlacionadas
-# uno que describen las características del endocarpio (PESOEND, ANCHOEND, LONGEND) y otro las de los pétalos
-# (LONGPET y ANCHOPET). 
-# Analizando la PC2 puede observarse que el mayor aporte a dicha componente está dado por las variables 
-# LONGPET, ANCHOPET Y SUPHOJA. 
-# cuadrante aquellas relacionadas con las características de los pétalos. Mientas que puede observarse un tercer grupo de
-# variables altamente correlacionadas que son aquellas que se observa que 
-# están altamente correlaciondas (los ángulos formados por los respetivos vectores son pequeños) y tienen 
-# una alta contribución a la dirección de la PC1 ya que el cos2 es alto. Por otra parte, las variables  
-# PESOEND, LONGEND Y ANCHOEND también se están altamente correlacionadas tienen una alta 
-# VER SI AGREGAR PC3 QUE TIENE DONDE PECLIMBO TIENE MUCHA CONTRIBUCIÓN.
-
+# observarse que las variables que describen las características del fruto y del endocarpio tiene alto aporte a la componente CP1
+# Mientras que las variables que describen las características de la flor tienen un aporte moderado a dicha componente. 
+# Además, observando el ángulo formado por los vectores que representan dichas variables se observa una alta correlación 
+# entre las variables que miden cada una de las características antes mencionadas. Por ejemplo, en el segundo cuadrante 
+# del plano cartesiano se observa que las variables que caracterizan el tamaño de la flor (TAMFLOR, LONGPET y ANCHOPET) están altamente correlacionadas 
+# entre si como también lo están las variables que describen las características del endocarpio (PESOEND, ANCHOEND, LONGEND). Por otro lado, en el tercer
+# cuadrante se observa que están altamente correlacionadas todas las variables que describen las características del
+# fruto (ANCHOF, PESO F, ESPESORF, LONANCHO y LONGF) .
+# Analizando la PC2 puede observarse que el mayor aporte a dicha componente está dado por la variable SUPHOJA seguida por las variables
+# ANOHOPET, LONGPET y en menor medida tamaño de la flor. Es por ello que puede pensarse que la PC2 tomará valores altos cuando
+# las variedades tengan flores y hojas grandes. Además, dado que el aporte de las variables relacionadas el fruto es moderado y, observando que los
+# pesos toman valores negativos, se esperaría que las variedades que están ubicadas en los valores más extremos positivos de la PC2, tengan frutos pequeños
