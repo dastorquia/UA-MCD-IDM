@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # -------------------------------------------------------------
 listofpackages <- c("psych", "ggplot2", "knitr", "pastecs", "FactoMineR",
                     "grid", "gridExtra", "ggfortify", "factoextra",
-                    "corrplot", "dplyr")
+                    "corrplot", "dplyr", "ggplotly")
 
 newPackages <- listofpackages[!(listofpackages %in% installed.packages()[, "Package"])]
 if (length(newPackages)) install.packages(newPackages)
@@ -25,10 +25,13 @@ for (paquete in listofpackages) {
 # -------------------------------------------------------------
 masterPath <- "~/MCD-IDM/UA-MCD-IDM/TP2/"
 
-dfDamas <- read.table(paste0(masterPath, "damas.txt"),
+# Se usan las variedades como nombres de fila y se quita la columna VAR,
+# para quedarnos solo con las 13 variables numéricas.
+dfDamas <- read.table(paste0("damas.txt"),
                       sep = "\t",
                       dec = ",",
                       header = TRUE,
+                      row.names = 1,
                       fileEncoding = "UTF-8")
 
 knitr::kable(head(dfDamas))   # primeras filas del dataset
@@ -48,14 +51,11 @@ knitr::kable(head(dfDamas))   # primeras filas del dataset
 # (PESOF), longitud de fruto (LONGF), ancho de fruto (ANCHOF), espesor de fruto (ESPESORF), peso del
 # endocarpio (PESOEND), longitud del endocarpio (LONGEND) y ancho del endocarpio (ANCHOEND).
 # El tamaño de la muestra para cada órgano y variedad fue de 25 repeticiones.
+# Cada fila representa una variedad y cada valor corresponde al resumen (promedio) de esas 25 repeticiones.
 # Todas los registros de peso están expresados en gramos, los de longitud en milímetros y superficie en
 # centímetros cuadrados
 
 
-dfDamas<-dfDamas[,-1] 
-
-# Se usan las variedades como nombres de fila y se quita la columna VAR,
-# para quedarnos solo con las 13 variables numéricas.
 
 # -------------------------------------------------------------
 # 2. EDA - Análisis Exploratorio de Datos
@@ -65,6 +65,7 @@ dfDamas<-dfDamas[,-1]
 res <- pastecs::stat.desc(dfDamas) %>% as.matrix %>% as.data.frame %>% round(2)
 res <- format(res, scientific = FALSE)
 knitr::kable(data.frame(res), digits = 2)
+
 
 # Podemos observar que no hay valores faltantes.
 # Se puede observar que en su mayoría la media y la mediana se aproximan, lo que
@@ -104,6 +105,7 @@ pairs.panels(dfDamas,
 # diagonal del gráfico, hay algunas relaciones que no son lineales, por ejemplo
 # PECLIMBO con PESOF, o como PESOEND con ANCHOPE.
 
+
 # -------------------------------------------------------------
 # 4. Boxplots
 # -------------------------------------------------------------
@@ -112,6 +114,7 @@ dfBox <- stack(dfDamas)
 names(dfBox) <- c("valor", "variable")
 ggplot(dfBox, aes(x = variable, y = valor)) +
   geom_boxplot()+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
 
 # Tal como se mencionó en el análisis exploratorio, es dificil comparar las variables,
 # ya que poseen distintas dimensiones y unidades. 
@@ -146,6 +149,7 @@ damaPca <- prcomp(as.matrix(X),center = T, scale. = T)
 
 summary(damaPca)
 
+
 # Para nuestro análisis, debemos elegir cuantas componentes retener. 
 # A medida que se agreguen más componentes, la complejidad del análisis aumenta 
 # ya que se deben empezar a considerar más combinaciones entre las componentes. 
@@ -168,9 +172,39 @@ summary(damaPca)
 
 plot(damaPca) # a este gráfico estaría bueno ponerle los valores sobre las barras
 
-fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 50))
+fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 60))
 
-# Terminar de definir si usamos 2 o 3 componentes.
+# Tabla con los autovalores
+# eigenvalue: el autovalor de cada componente (7,13; 2,06; 1,23; 1,01...)
+# variance.percent: el % de varianza que explica esa componente (54,8; 15,9; 9,4; 7,8...)
+# cumulative.variance.percent: el % acumulado (54,8; 70,7; 80,2; 87,9...)
+eig <- get_eigenvalue(damaPca)
+knitr::kable(round(eig, 2))   # autovalor, % varianza, % acumulado
+
+# Se descarta PC4 ya que apenas supera Kaiser (1,011), valor observado en la tabla (Dim.4 eigenvalue 1.01)
+# Kaiser dice “retené autovalores > 1”, y 1,011 lo cumple por un margen mínimo.
+
+# Para terminar de definir si usar PC3
+
+var <- get_pca_var(damaPca)          # funciona con el objeto de prcomp
+
+round(var$cos2[, 1:4], 2)            # (a) calidad de representación por componente
+round(rowSums(var$cos2[, 1:2]), 2)   # (b) cos2 acumulado en PC1+PC2, dice qué proporción de la variabilidad de una variable queda capturada.
+round(var$contrib[, 1:4], 1)         # (c) contribución (%) de cada variable a cada PC
+round(damaPca$rotation[, 3:4], 2)    # (d) cargas de PC3 y PC4
+
+# “PECLIMBO tiene cos² = 0,10 en PC1–PC2”. Es el resultado de (b).
+# Sus correlaciones son −0,13 con PC1 y −0,28 con PC2, así que 0,13² + 0,28² ≈ 0,10.
+# Quiere decir que con solo dos componentes se pierde el 90 % de lo que varía PECLIMBO.
+# Se ve también en el gráfico de variables: su flecha es muy corta.
+
+# “PC3 está dominada por PECLIMBO”. Sale de (c) y (d). 
+# En PC3 la carga de PECLIMBO es 0,76, y contribuye 57,4 % de esa componente 
+# (el resto está repartido: LONANCHO 13 %, PESOEND 10 %). 
+# Su correlación con PC3 es 0,84, o sea cos² = 0,71.
+# Agregar PC3 tiene sentido: PECLIMBO pasa de 0,10 a 0,81 de representación acumulada.
+# Sin PC3, esa variable queda casi fuera del análisis.
+
 
 # -------------------------------------------------------------
 # 6. MATRIZ DE CARGAS
