@@ -58,7 +58,7 @@ knitr::kable(head(dfDamas))   # primeras filas del dataset
 # -------------------------------------------------------------
 # Resumen de variables
 # -------------------------------------------------------------
-# VAR: Tipo de variedad de damasco | Unidad: [Adimensional]
+# VAR: Tipo de variedad de damasco - variable cualitativa
 # TAMFLOR: Tamaño de la flor | Unidad: [mm]
 # LONGPET: Longitud del pétalo | Unidad: [mm]
 # ANCHOPET: Ancho del pétalo | Unidad: [mm]
@@ -167,7 +167,9 @@ damaPca <- prcomp(as.matrix(X),center = T, scale. = T)
 
 summary(damaPca)
 
-# Tabla de autovalores
+#-----------------------------------------------------------------------------
+# Autovalores y proporción de variancia explicadada
+#------------------------------------------------------------------------------
 
 eig <- get_eigenvalue(damaPca)
 knitr::kable(round(eig, 2))   # autovalor, % varianza, % acumulado
@@ -204,6 +206,10 @@ fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 60))
 # descriptiva con un scree plot. Puede observarse una fuerte caida desde PC1 a PC2,
 # y luego la curva se aplana a partir de PC3-PC4.
 
+#------------------------------------------------------------------------
+# ¿Cuántas componentes retener?
+#-----------------------------------------------------------------------
+
 # A partir del análisis de los 3 criterios mencionados puede pensarse que es 
 # recomendable retener las primeras 3 componentes principales.
 
@@ -221,10 +227,19 @@ round(damaPca$rotation[, 3:4], 2)    # (d) cargas de PC3 y PC4
 # En PC3 la carga de PECLIMBO es 0,76, y contribuye 57,4 % de esa componente. 
 # Al agregar PC3, pasamos a capturar el 80,15% de la variabilidad de las componentes.
 
+####################################################################################################################
+# NOTA: SI AGREGAMOS LA TERCERA COMPONENTE, TENEMOS QUE HACER LAS INTERPRETACIONES DEL BIPLOT PARA CP1-CP3 Y CP2-CP3+
+# SI NO LA INCLUIMOS PODEMOS JUSTIFICAR QUE NO LO HACEMOS PORQUE SOLO AGREGA UN 10% A LA EXPLICACIÓN DE LA VARIABILIDAD
+# QUE PARA UN CONJUNTO DE DATOS CON ESTAS CARACTERÍSTICAS, NO LO CONSIDERAMOS NECESARIO
+####################################################################################################################
+
+
+
 # -------------------------------------------------------------
 # 6. MATRIZ DE CARGAS
 # -------------------------------------------------------------
 # Matriz de los vectores propios
+
 knitr::kable(as.data.frame(unclass(damaPca$rotation)))
 
 # INTERPRETACIÓN: Observando el vector propio de carga para la componente principal 1 se observa que hay
@@ -232,56 +247,58 @@ knitr::kable(as.data.frame(unclass(damaPca$rotation)))
 # negativo y, las que tienen signo positivo, la magnitud es muy pequeña. Estarán más a la izquierda del gráfico
 # aquellas variedades que presenten valores grandes en las variables relacionadas con el tamaño tanto de la 
 # flor como del fruto y del endocarpio.
-# En cuanto a la CP2 tomará valores altos cuando las variedades tengan superficie de hoja grande y también valores
+# En cuanto a la CP2 tomará valores altos positivos cuando las variedades tengan superficie de hoja grande y también valores
 # altos en las variables relacionadas al tamaño de la flor y tomará valores grandes negativos con respecto a esa componente
 # cuando los frutos sean grandes. 
 # Resumiendo en el segundo cuadrante estarán las variaedades que presenten valores altos en 
 # las variables relacionadas con el tamaño de la flor y presenten hojas grandes. En el tercer cuadrante estarán
-# aquellas con valores altos del tamaño en el tamaño del fruto y en el endorcarpio.
+# aquellas con valores altos en el tamaño del fruto y en el endorcarpio.
 # La variedad BLANCO se caracteriza por tener flores y hojas grandes
 # La variedad TADEO tiene frutos grandes
-# La variedad GABACHET tiene frutos y hojas pequenas.
+# La variedad GABACHET tiene frutos y hojas pequeñas.
 # Las variedades GANDIA, GINESTA y PALABRAS se caracterizan por tener flores pequeñas.
 # La variedad CANINO tiene hojas pequeñas y flores pequeñas.
-# CHEQUEAR LAS INTERPRETACIONES. CORREGIR
 
-# FALTA MENCIONAR EL DAMASCO DE JARDÍN QUE ESTÁ EN EL PRIMER CUADRANTE. 
+
+
+# La primera componente principal está representada por:
+# PC1 = -0.24391480*TAMFLOR   - 0.28037433*LONGPET - 0.26695115*ANCHOPET + 0.03766820*SUPHOJA 
+#     -0.2026726*LONANCHO + 0.04781008*PECLIMBO - 0.32258043*PESOF - 0.33558338*LONGF + 0.32154381*ANCHOF -
+#      -0.31241703*ESPESORF - 0.32701658*PESOEND - 0.33506257*LONGEND - 0.33011523*ANCHOEND
+
+# Para la variedad BLANCO la coordenada de la primera componente es:
+
+y <-  (-0.24391480*1.37295522   - 0.28037433*0.9433209 - 0.26695115 * 1.57464408 + 0.03766820*0.54920637   
+       -0.2026726*0.55099718 + 0.04781008*0.46377296 - 0.32258043*0.21244507 - 0.33558338*0.72594876  
+       -0.32154381*0.25055593 - 0.31241703*0.34705401 - 0.32701658*1.8432897 - 0.33506257*1.9402104  
+       -0.33011523*1.8006967)
+
+# o, lo que es equivalente
+
+sum(damaPca$rotation[,1] * std_X[1,])
+
+# Esto puede verificarse citando a x del objeto damaPca
+
+damaPca$x
+
+# donde a primera fila de damaPca$x es la primera variedad (BLANCO) valorizada en las distintas componentes de
+# damaPca$rotation
+
+ 
 knitr::kable(damaPca$x)
 
-library(ggfortify)
-library(plotly)
 
-p <- autoplot(damaPca,
-              data = dfDamas, 
-              colour = 'VAR', ### PUEDE NO TENER MUCHO SENTIDO COLOREAR POR VAR PORQUE HAY UNA OBS POR VAR 
-              loadings = TRUE,
-              loadings.label = TRUE,
-              loadings.label.size = 3)
+p <- autoplot(
+  damaPca,
+  data = dfDamas,
+  colour = 'VAR',
+  loadings = TRUE,
+  loadings.label = TRUE,
+  loadings.label.size = 3,
+  scale = 0
+)
 
 ggplotly(p)
-#######################################################################
-# ELIMINARIA TODO LO QUE SIGUE
-# ##################### PCA con factoMineR ############ 
-# # NOTA: El resultado es el mismo (gráficos más lindos que prcomp) pero tener en cuenta que los resultados dan rotados 180|C
-# # PODEMOS PRESENTARLO EXPLICANDO ESTO O PRESENTAR LA SALIDA DE UNO. TENER EN CUENTA QUE LAS OBSERVACIONES CAMBIAN DE CUADRANTE AUNQUE
-# # EL LA RELACIÓN ENTRE LAS VARIABLES ES LA MISMA
-# #################################################
-# 
-# X <- dfDamas
-# damaPca <- FactoMineR::PCA(X = X, scale.unit = T, ncp = ncol(X), graph = T)
-# 
-# # Matriz de vectores propios
-# 
-# damaPca$svd$V
-# 
-# # ind <- get_pca_ind(damaPca)
-# # ind
-# # 
-# # p.1 <- fviz_pca_ind(damaPca, col.ind = "coord", 
-# #              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-# #              repel = TRUE # Avoid text overlapping (slow if many points)
-# # )
-# ##########################################################################
 
 
 # Interpretación del gráfico variables - PCA
@@ -316,3 +333,16 @@ fviz_pca_var(damaPca, col.var = "cos2",
 # ANOHOPET, LONGPET y en menor medida tamaño de la flor. Es por ello que puede pensarse que la PC2 tomará valores altos cuando
 # las variedades tengan flores y hojas grandes. Además, dado que el aporte de las variables relacionadas el fruto es moderado y, observando que los
 # pesos toman valores negativos, se esperaría que las variedades que están ubicadas en los valores más extremos positivos de la PC2, tengan frutos pequeños
+
+
+#--------------------------------------------------------------------------------
+# Correlaciones entre cada variable y cada componente
+#--------------------------------------------------------------------------------
+
+# La correlación entre cada variable estandarizada y las componentes principales permite evaluar qué tan
+# bien representada está cada variable por cada CP
+
+X.est <- scale(dfDamas[-1])
+cor(X.est, damaPca$x)
+
+# La interpretación de las correlaciones es análoga a la de la matriz de cargas presentada anteriormente
