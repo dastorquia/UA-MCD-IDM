@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # -------------------------------------------------------------
 listofpackages <- c("psych", "ggplot2", "knitr", "pastecs", "FactoMineR",
                     "grid", "gridExtra", "ggfortify", "factoextra",
-                    "corrplot", "dplyr", "ggplotly")
+                    "corrplot", "dplyr", "plotly")
 
 newPackages <- listofpackages[!(listofpackages %in% installed.packages()[, "Package"])]
 if (length(newPackages)) install.packages(newPackages)
@@ -239,86 +239,25 @@ round(damaPca$rotation[, 3:4], 2)    # (d) cargas de PC3 y PC4
 # 6. MATRIZ DE CARGAS
 # -------------------------------------------------------------
 # Matriz de los vectores propios
-
 knitr::kable(as.data.frame(unclass(damaPca$rotation)))
 
-# INTERPRETACIÓN: Observando el vector propio de carga para la componente principal 1 se observa que hay
-# un ordenamiento natural de las observaciones ya que la mayoría de las variables tienen asociado un signo
-# negativo y, las que tienen signo positivo, la magnitud es muy pequeña. Estarán más a la izquierda del gráfico
-# aquellas variedades que presenten valores grandes en las variables relacionadas con el tamaño tanto de la 
-# flor como del fruto y del endocarpio.
-# En cuanto a la CP2 tomará valores altos positivos cuando las variedades tengan superficie de hoja grande y también valores
-# altos en las variables relacionadas al tamaño de la flor y tomará valores grandes negativos con respecto a esa componente
-# cuando los frutos sean grandes. 
-# Resumiendo en el segundo cuadrante estarán las variaedades que presenten valores altos en 
-# las variables relacionadas con el tamaño de la flor y presenten hojas grandes. En el tercer cuadrante estarán
-# aquellas con valores altos en el tamaño del fruto y en el endorcarpio.
-# La variedad BLANCO se caracteriza por tener flores y hojas grandes
-# La variedad TADEO tiene frutos grandes
-# La variedad GABACHET tiene frutos y hojas pequeñas.
-# Las variedades GANDIA, GINESTA y PALABRAS se caracterizan por tener flores pequeñas.
-# La variedad CANINO tiene hojas pequeñas y flores pequeñas.
-
-
-
-# La primera componente principal está representada por:
-# PC1 = -0.24391480*TAMFLOR   - 0.28037433*LONGPET - 0.26695115*ANCHOPET + 0.03766820*SUPHOJA 
-#     -0.2026726*LONANCHO + 0.04781008*PECLIMBO - 0.32258043*PESOF - 0.33558338*LONGF + 0.32154381*ANCHOF -
-#      -0.31241703*ESPESORF - 0.32701658*PESOEND - 0.33506257*LONGEND - 0.33011523*ANCHOEND
-
-# Para la variedad BLANCO la coordenada de la primera componente es:
-
-y <-  (-0.24391480*1.37295522   - 0.28037433*0.9433209 - 0.26695115 * 1.57464408 + 0.03766820*0.54920637   
-       -0.2026726*0.55099718 + 0.04781008*0.46377296 - 0.32258043*0.21244507 - 0.33558338*0.72594876  
-       -0.32154381*0.25055593 - 0.31241703*0.34705401 - 0.32701658*1.8432897 - 0.33506257*1.9402104  
-       -0.33011523*1.8006967)
-
-# o, lo que es equivalente
-
-sum(damaPca$rotation[,1] * std_X[1,])
-
-# Esto puede verificarse citando a x del objeto damaPca
-
-damaPca$x
-
-# donde a primera fila de damaPca$x es la primera variedad (BLANCO) valorizada en las distintas componentes de
-# damaPca$rotation
-
- 
+# Matriz de puntuaciones (scores) 
 knitr::kable(damaPca$x)
 
+# Gráfico de scores para PC1, PC2 y PC3
+fviz_contrib(damaPca, choice = "var", axes = 1, top = 10)
+fviz_contrib(damaPca, choice = "var", axes = 2, top = 10)
+fviz_contrib(damaPca, choice = "var", axes = 3, top = 10)
 
-p <- autoplot(
-  damaPca,
-  data = dfDamas,
-  colour = 'VAR',
-  loadings = TRUE,
-  loadings.label = TRUE,
-  loadings.label.size = 3,
-  scale = 0
-)
+# La línea punteada, es la línea 1/n, expresada en porcentaje. 
+# Donde n es la cantidad de observaciones. En este caso 1/13 *100, igual a 7,69%.
 
-ggplotly(p)
-
-
-# Interpretación del gráfico variables - PCA
-
+# Gráfico variables - PCA
 var <- get_pca_var(damaPca)
-
 tabla_cos2 <- knitr::kable(var$cos2)
-
 tabla_contrib <- knitr::kable(var$contrib)
-
 tabla_coord <- knitr::kable(var$coord)
-
-corrplot(var$contrib, is.corr=FALSE)  # Otra forma de visualizar la contribución
-
-
-
-fviz_pca_var(damaPca, col.var = "cos2",
-             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
-             repel = TRUE # Avoid text overlapping
-)
+corrplot(var$contrib, is.corr=FALSE)
 
 # A partir del análisis del gráfico de variables - PCA y de la tabla tabla_contrib puede 
 # observarse que las variables que describen las características del fruto y del endocarpio tiene alto aporte a la componente CP1
@@ -329,20 +268,167 @@ fviz_pca_var(damaPca, col.var = "cos2",
 # entre si como también lo están las variables que describen las características del endocarpio (PESOEND, ANCHOEND, LONGEND). Por otro lado, en el tercer
 # cuadrante se observa que están altamente correlacionadas todas las variables que describen las características del
 # fruto (ANCHOF, PESO F, ESPESORF, LONANCHO y LONGF) .
-# Analizando la PC2 puede observarse que el mayor aporte a dicha componente está dado por la variable SUPHOJA seguida por las variables
+# Analizando la PC2, puede observarse que el mayor aporte a dicha componente está dado por la variable SUPHOJA seguida por las variables
 # ANOHOPET, LONGPET y en menor medida tamaño de la flor. Es por ello que puede pensarse que la PC2 tomará valores altos cuando
 # las variedades tengan flores y hojas grandes. Además, dado que el aporte de las variables relacionadas el fruto es moderado y, observando que los
-# pesos toman valores negativos, se esperaría que las variedades que están ubicadas en los valores más extremos positivos de la PC2, tengan frutos pequeños
+# pesos toman valores negativos, se esperaría que las variedades que están ubicadas en los valores más extremos positivos de la PC2, tengan frutos pequeños.
 
+# Graficos e interpretaciones PC1 y PC2
+# Biplot PC1-PC2
+p12 <- autoplot(
+  damaPca,
+  data = dfDamas,
+  colour = 'VAR',
+  loadings = TRUE,
+  loadings.label = TRUE,
+  loadings.label.size = 3,
+  scale = 0)
+
+ggplotly(p12)
+
+# Interpretaciones Biplot PC1-PC2
+# Observando el vector propio de carga para la componente principal 1 se observa que hay
+# un ordenamiento natural de las observaciones ya que la mayoría de las variables tienen asociado un signo
+# negativo y, las que tienen signo positivo, la magnitud es muy pequeña. Estarán más a la izquierda del gráfico
+# aquellas variedades que presenten valores grandes en las variables relacionadas con el tamaño tanto de la 
+# flor como del fruto y del endocarpio. Es decir, la PC1 es un eje de tamaño.
+# En cuanto a la CP2 tomará valores altos positivos cuando las variedades tengan superficie de hoja grande y también valores
+# altos en las variables relacionadas al tamaño de la flor y tomará valores grandes negativos con respecto a esa componente
+# cuando los frutos sean grandes. Es decir, la PC2 es un eje de forma.
+# Resumiendo, en el segundo cuadrante estarán las variedades que presenten valores altos en 
+# las variables relacionadas con el tamaño de la flor y presenten hojas grandes. En el tercer cuadrante estarán
+# aquellas con valores altos en el tamaño del fruto y en el endorcarpio.
+# La variedad BLANCO se caracteriza por tener flores y hojas grandes
+# LaS variedades TADEO y CANINO tiene frutos grandes
+# La variedad GABACHET tiene frutos y hojas pequeñas.Este es una variedad que suele usarse de forma decorativa.
+# Las variedades GANDIA, GINESTA y PALABRAS se caracterizan por tener flores pequeñas.
+# Las variedades BULIDA, CHIRIVEL y R. CARLET, que se encuentran más cerca del centro
+# del gráfico, poseen variables con caracteristicas promedios. Es decir, no tienen una
+# una característica distintiva. Ejemplo, no tienen ni frutos grandes, ni hojas grandes, etc.
+
+# Gráfico de scores para PC1-PC2
+fviz_contrib(damaPca, choice = "var", axes = 1:2)
+
+# Circulo de correlaciones PC1-PC2
+fviz_pca_var(damaPca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE)
+
+# El círculo de correlaciones aporta la calidad de representación de cada variable 
+# en el plano PC1–PC2 (cos2). La mayoría de las variables de tamaño 
+# (fruto, endocarpio, pétalo) están muy bien representadas, con lechas largas, cercanas 
+# al borde y en naranja fuerte, por lo que su interpretación es confiable.
+# En cambio, PECLIMBO queda menos representada, con una flecha corta y en color celeste, cos2 bajo.
+# Su variación no está capturada en este plano, por lo que no conviene interpretarla acá.
+
+# Graficos e interpretaciones PC2 y PC3
+# Biplot PC2-PC3
+p23 <- autoplot(
+  damaPca,
+  x = 2,
+  y = 3,
+  data = dfDamas,
+  colour = 'VAR',
+  loadings = TRUE,
+  loadings.label = TRUE,
+  loadings.label.size = 3,
+  scale = 0)
+
+ggplotly(p23)
+
+# Interpretaciones Biplot PC2-PC3
+# Se siguen observando las variables relacionadas al tamaño de la flor en un cuadrante 
+# y las relacionadas al fruto en otro.A diferencia de PC1-PC2 donde ocurria en el cuadrante 2 y 3, 
+# ahora al graficar PC2-PC3 esta diferencia se nota en los cuadrantes 3 y 4, 
+# dado que ahora PC2 es la ordenada.
+# En conclusión, PC2 es un eje de forma ya que distingue entre fruto y flor.
+# Notamos tambien, como era de esperarse luego de haber realizado los analisis de la 
+# importancia de la tercer componente, que PECLIMBO toma un protagonismo mayor.
+# Esto se aprecia en el gráfico ya que es el vector más largo.
+# Tambien, puede observarse que aparece LONANCHO que no estaba representada anteriormente.
+# PECLIMBO y LONANCHO apuntan en sentido opuesto, lo que indica una correlación 
+# negativa (o inversa) entre ambas.
+
+# Gráfico de scores para PC2-PC3
+fviz_contrib(damaPca, choice = "var", axes = 2:3, top = 10)
+
+# Circulo de correlaciones PC2-PC3
+fviz_pca_var(damaPca, axes = c(2, 3), col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE)
+# A modo breve, podemos observar que PECLIMBO está muy bien representada y que 
+# cuenta con una flecha larga y cos2 alto. Las demás variables, no están tan bien
+# representadas como si lo están en PC1-PC2.
+
+# Graficos e interpretaciones PC1 y PC3
+# Biplot PC1-PC3
+p13 <- autoplot(
+  damaPca,
+  x = 1,
+  y = 3,
+  data = dfDamas,
+  colour = 'VAR',
+  loadings = TRUE,
+  loadings.label = TRUE,
+  loadings.label.size = 3,
+  scale = 0)
+
+ggplotly(p13)
+
+# Interpretaciones Biplot PC1-PC3
+# Como se menciono anteriormente, PC1 es el eje de tamaño. Las que se encuentren
+# del lado izquierdo son las que presentan un tamaño de fruto o flor más grande.
+# Caso contrario, las variedades del lado derecho presentan caracteristicas opuestas.
+# A su vez, aparecen los vectores PECLIMBO y LONGANCHO, que antes estaban ocultas
+# en el análisis de PC1-PC2.
+# Como variedad a destacar, la variedad MARTINET (segundo cuadrante), es la que
+# presenta el mayor endocarpio de todas las variedades (PESOEND, LONGEND, ANCHOEND).
+
+# Gráfico de scores para PC1-PC3
+fviz_contrib(damaPca, choice = "var", axes = c(1, 3), top = 10)
+
+# Circulo de correlaciones PC1-PC3
+fviz_pca_var(damaPca, axes = c(1, 3), col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE)
+# A primera vista en el biplot se observaba un vector muy grande para PECLIMBO,
+# sin embargo al ver el circulo de correlaciones podemos ver la calidad de representación,
+# y en este caso son el PESOEND, LONGEND Y ANCHOEND las mejores representadas.
 
 #--------------------------------------------------------------------------------
-# Correlaciones entre cada variable y cada componente
+# Conclusiones
 #--------------------------------------------------------------------------------
+# Tras haber analizado el dataset de damascos, primero con un análisis exploratorio
+# de datos (EDA) y luego con un análisis de componentes principales (PCA), fue posible
+# visualizar otro tipo de información que no puede observarse a simple vista con
+# medidas estadísticas (media, mediana, varianza).
 
-# La correlación entre cada variable estandarizada y las componentes principales permite evaluar qué tan
-# bien representada está cada variable por cada CP
+# El EDA mostró que las variables estaban medidas en escalas y unidades muy distintas
+# (g, mm, cm2 y cocientes adimensionales), con varianzas que iban de 0,001 (PECLIMBO)
+# a 144 (PESOF). Por ese motivo el PCA se realizó sobre la matriz de correlaciones,
+# evitando que las variables de mayor escala dominaran las componentes solo por su
+# magnitud.
+#
+# El PCA permitió resumir las 13 variables originales en 3 componentes que, en
+# conjunto, explican el 80,2 % de la variabilidad total. Esto confirma que gran parte
+# de la información estaba redundante y podía comprimirse sin pérdidas relevantes:
+#
+#   - PC1 (54,8 %) es un EJE DE TAMAÑO: todas las variables de tamaño cargan con el
+#     mismo signo, de modo que separa variedades grandes (en flor, fruto y endocarpio
+#     a la vez) de variedades chicas.
+#   - PC2 (15,9 %) es un EJE DE FORMA: contrasta el desarrollo de flor y hoja
+#     (SUPHOJA, ANCHOPET, LONGPET) frente al desarrollo del fruto. A igual tamaño,
+#     distingue variedades con mayor flor de las de mayor fruto.
+#   - PC3 (9,4 %) está dominada casi exclusivamente por PECLIMBO, una variable 
+#     que en PC1–PC2 quedaba oculta. La misma, junto con LONANCHO, son variaciones 
+#     independientes del tamaño.
 
-X.est <- scale(dfDamas[-1])
-cor(X.est, damaPca$x)
+# A su vez, el biplot muestra la posición de variedades y variables, pero es recien
+# al cruzarlo con el circulo de correlaciones que podemos observar la calidad de representación.
+# De esta forma, detectamos que PECLIMBO está menos representada en PC1–PC2 y 
+# mejor representada en PC2–PC3, lo que confirma la necesidad de sumar una tercer componente al análisis.
 
-# La interpretación de las correlaciones es análoga a la de la matriz de cargas presentada anteriormente
+# En síntesis, el PCA cumplió el objetivo de caracterizar el conjunto de datos. 
+# Se redujo de 13 variables a 3 componentes interpretables (tamaño, forma de flor y fruto y relación
+# peciolo-limbo), explicando el 80,2 % de la variabilidad total y permitiendo 
+# identificar las características más distintivas de cada variedad de damasco.
