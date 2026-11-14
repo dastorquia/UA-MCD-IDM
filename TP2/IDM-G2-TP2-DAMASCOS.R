@@ -82,7 +82,6 @@ res <- pastecs::stat.desc(dfDamas[,-1]) %>% as.matrix %>% as.data.frame %>% roun
 res <- format(res, scientific = FALSE)
 knitr::kable(data.frame(res), digits = 2)
 
-
 # Podemos observar que no hay valores faltantes.
 # Se puede observar que en su mayoría la media y la mediana se aproximan, lo que
 # sugiere que las distribuciones son aproximadamente simetricas.
@@ -170,7 +169,6 @@ summary(damaPca)
 #-----------------------------------------------------------------------------
 # Autovalores y proporción de variancia explicadada
 #------------------------------------------------------------------------------
-
 eig <- get_eigenvalue(damaPca)
 knitr::kable(round(eig, 2))   # autovalor, % varianza, % acumulado
 
@@ -206,10 +204,9 @@ fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 60))
 # descriptiva con un scree plot. Puede observarse una fuerte caida desde PC1 a PC2,
 # y luego la curva se aplana a partir de PC3-PC4.
 
-#------------------------------------------------------------------------
+#-----------------------------------------------------------------------
 # ¿Cuántas componentes retener?
 #-----------------------------------------------------------------------
-
 # A partir del análisis de los 3 criterios mencionados puede pensarse que es 
 # recomendable retener las primeras 3 componentes principales.
 
@@ -227,16 +224,19 @@ round(damaPca$rotation[, 3:4], 2)    # (d) cargas de PC3 y PC4
 # En PC3 la carga de PECLIMBO es 0,76, y contribuye 57,4 % de esa componente. 
 # Al agregar PC3, pasamos a capturar el 80,15% de la variabilidad de las componentes.
 
-####################################################################################################################
-# NOTA: SI AGREGAMOS LA TERCERA COMPONENTE, TENEMOS QUE HACER LAS INTERPRETACIONES DEL BIPLOT PARA CP1-CP3 Y CP2-CP3+
-# SI NO LA INCLUIMOS PODEMOS JUSTIFICAR QUE NO LO HACEMOS PORQUE SOLO AGREGA UN 10% A LA EXPLICACIÓN DE LA VARIABILIDAD
-# QUE PARA UN CONJUNTO DE DATOS CON ESTAS CARACTERÍSTICAS, NO LO CONSIDERAMOS NECESARIO
-####################################################################################################################
+#--------------------------------------------------------------------------------
+# Correlaciones entre cada variable y cada componente
+#--------------------------------------------------------------------------------
+# La correlación entre cada variable estandarizada y las componentes principales permite evaluar qué tan
+# bien representada está cada variable por cada componente principal.
 
+X.est <- scale(dfDamas[-1])
+cor(X.est, damaPca$x)
 
+# La interpretación de las correlaciones es análoga a la matriz de cargas presentada a continuación.
 
 # -------------------------------------------------------------
-# 6. MATRIZ DE CARGAS
+# MATRIZ DE CARGAS
 # -------------------------------------------------------------
 # Matriz de los vectores propios
 knitr::kable(as.data.frame(unclass(damaPca$rotation)))
@@ -396,7 +396,7 @@ fviz_pca_var(damaPca, axes = c(1, 3), col.var = "cos2",
 # y en este caso son el PESOEND, LONGEND Y ANCHOEND las mejores representadas.
 
 #--------------------------------------------------------------------------------
-# Conclusiones
+# 3. CONCLUSIONES
 #--------------------------------------------------------------------------------
 # Tras haber analizado el dataset de damascos, primero con un análisis exploratorio
 # de datos (EDA) y luego con un análisis de componentes principales (PCA), fue posible
