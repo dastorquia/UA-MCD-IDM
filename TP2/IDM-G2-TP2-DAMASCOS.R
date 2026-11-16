@@ -59,19 +59,19 @@ knitr::kable(head(dfDamas))   # primeras filas del dataset
 # Resumen de variables
 # -------------------------------------------------------------
 # VAR: Tipo de variedad de damasco - variable cualitativa
-# TAMFLOR: Tamaño de la flor | Unidad: [mm]
-# LONGPET: Longitud del pétalo | Unidad: [mm]
-# ANCHOPET: Ancho del pétalo | Unidad: [mm]
-# SUPHOJA: Superficie de hoja | Unidad: [cm^2]
+# TAMFLOR: Tamaño de la flor | Unidad: milímetros (mm)
+# LONGPET: Longitud del pétalo | Unidad: milímetros (mm)
+# ANCHOPET: Ancho del pétalo | Unidad: milímetros (mm)
+# SUPHOJA: Superficie de hoja | Unidad: centímetros cuadrado (cm^2)
 # LONANCHO: Relación longitud y ancho de hoja | Unidad: [Adimensional]
 # PECLIMBO: Relación peciolo-limbo | Unidad: [Adimensional]
-# PESOF: Peso del fruto | Unidad: [g]
-# LONGF: Longitud del fruto | Unidad: [mm]
-# ANCHOF: Ancho del fruto | Unidad: [mm]
-# ESPESORF: Espesor del fruto | Unidad: [mm]
-# PESOEND: Peso del endocarpio | Unidad: [g]
-# LONGEND: Longitud del endocarpio | Unidad: [mm]
-# ANCHOEND: Ancho del endocarpio | Unidad: [mm]
+# PESOF: Peso del fruto | Unidad: gramos (g)
+# LONGF: Longitud del fruto | Unidad: milímetros (mm)
+# ANCHOF: Ancho del fruto | Unidad: milímetros (mm)
+# ESPESORF: Espesor del fruto | Unidad: milímetros (mm)
+# PESOEND: Peso del endocarpio | Unidad: gramos (g)
+# LONGEND: Longitud del endocarpio | Unidad: milímetros (mm)
+# ANCHOEND: Ancho del endocarpio | Unidad: milímetros (mm)
 
 # -------------------------------------------------------------
 # 1. EDA - Análisis Exploratorio de Datos
@@ -86,36 +86,38 @@ knitr::kable(data.frame(res), digits = 2)
 # Se puede observar que en su mayoría la media y la mediana se aproximan, lo que
 # sugiere que las distribuciones son aproximadamente simetricas.
 
-# Se observan valores de varianza con una gran dispersión (de 0 a 144), esto 
+# Se observan valores de varianza con una gran variabilidad (de 0 a 144), esto 
 # se debe a que estamos analizando datos con distintas escalas y unidades.
 
 # El coeficiente de variación nos permite comparar la variabilidad de los
-# distintos atributos, aun cuando esten medidos en distintas unidades o la
+# distintos atributos, aún cuando estén medidos en distintas unidades o la
 # magnitud que tomen cada uno de ellos varie.
-# Para este conjunto de datos podemos ver que son bastante homogeneos
+# Para este conjunto de datos podemos ver que son bastante homogéneos
 # (CV entre 6 a 14%). Las excepciones son el peso del endocarpio 
 # (PESOEND, CV = 42 %), el peso del fruto (PESOF, CV = 26 %) y la longitud del 
-# endocarpio (LONGEND, CV 21 %), que son las que más diferencian a las variedades.
+# endocarpio (LONGEND, CV 21 %).
 
 # -------------------------------------------------------------
 # Boxplots
 # -------------------------------------------------------------
 # Se realizan los boxplots para ver descriptivamente las variables y detectar outliers. 
+
 dfBox <- stack(dfDamas[,-1])
 names(dfBox) <- c("valor", "variable")
 ggplot(dfBox, aes(x = variable, y = valor)) +
-  geom_boxplot()+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 # Tal como se mencionó en el análisis exploratorio, es dificil comparar las variables,
-# ya que poseen distintas dimensiones y unidades. 
+# ya que poseen distintas magnitudes y unidades. 
 # Sin embargo, lo que llama la atención, son las figuras de LONANCHO (relación longitud y ancho de hoja)
 # y PECLIMBO (relación peciolo-limbo), que presentan un rango muy bajo lo que provoca que 
 # el boxplot se vea más estrecho.
 
 # A su vez, notamos que las variables SUPHOJA, PESOF, ANCHOF y ESPESORF presentan outliers. 
 
-# Vamos a utilizar el conjunto completo del dataset, incluyendo los outliers, y
-# a su vez, no hizo falta descartar ningún registro por ausencia de datos faltantes.
+# Vamos a utilizar el conjunto completo del dataset, incluyendo los outliers. 
+# No hizo falta descartar ningún registro por ausencia de datos faltantes.
 
 # -------------------------------------------------------------
 # Correlaciones
@@ -126,27 +128,27 @@ ggplot(dfBox, aes(x = variable, y = valor)) +
 # gráficos de dispersión y por encima los coeficientes de correlación.
 
 pairs.panels(dfDamas[,-1], 
-             method = "pearson", # correlation method
+             method = "pearson", # Método de correlación
              hist.col = "#00AFBB",
-             density = TRUE,  # show density plots
-             ellipses = F) # show correlation ellipses
+             density = TRUE,  # Muestra los gráficos de densidad
+             ellipses = F) # Si es T muestra elipses de correelación
 
 # Los coeficiente de correlación más altos (0,87 - 0,99) se observan
 # en las variables relacionadas al tamaño del fruto (PESOF, ANCHOF, LONGF, ESPESORF).
 # Tiene sentido ya que un fruto más grande tiende a ser más pesado.
-# Asimismo, hay un valor elevado de coeficiente de correlación entre el 
+# Asimismo, se presenta valor de coeficiente de correlación elevado entre el 
 # la longitud y el ancho del pétalo (LONGPET y ANCHOPET), como también en
 # la longitud del endocarpio y el ancho del endocarpio (LONGEND y ANCHOEND).
 
 # Con respecto a los gráficos de dispersión que se presentan debajo de la
 # diagonal del gráfico, hay algunas relaciones que no son lineales, por ejemplo
-# PECLIMBO con PESOF, o como PESOEND con ANCHOPE.
+# PECLIMBO con PESOF y,  PESOEND con ANCHOPE.
 
 # -------------------------------------------------------------
 # 2. PCA - Análisis de Componentes Principales
 # -------------------------------------------------------------
 # Dado que en el EDA se observaron varias relaciones lineales entre las variables
-# con valores de coeficientes de correlación altos, se decide avanzar con el 
+# con valores de coeficientes de correlación altos, se decide continuar con un 
 # PCA para reducir la dimensionalidad, capturando la mayor variabilidad posible
 # del conjunto de datos. Queremos mencionar que somos conscientes que existen 
 # algunas relaciones no lineales y que PCA no logra captar esta 
@@ -158,7 +160,7 @@ pairs.panels(dfDamas[,-1],
 # adimensionales) y con escalas muy diferentes: las varianzas van de 0,001
 # (PECLIMBO) a 144 (PESOF).
 # Con la matriz de covarianzas, las variables de mayor varianza dominarían las
-# componentes solo por su escala. 
+# componentes solo por su escala y magnitud. 
 
 X <- dfDamas[,-1]
 
@@ -180,7 +182,9 @@ knitr::kable(round(eig, 2))   # autovalor, % varianza, % acumulado
 # A medida que se agreguen más componentes, la complejidad del análisis aumenta 
 # ya que se deben empezar a considerar más combinaciones entre las componentes. 
 
-# Criterio 1: Seleccionar los autovalores cuyo porsentaje de variabilidad explicada 
+# Criterios para elegir el número de componentes principales
+
+# Criterio 1: Seleccionar los autovalores cuyo porcentaje de variabilidad explicada 
 # acumule entre 70-80%
 # Se observa que la componente PC1 explica el 54,8 % de la variabilidad total y la PC2 un
 # 15,9 % extra, dando un acumulado de 70,7 %. Para nuestro caso, consideramos 
@@ -193,10 +197,6 @@ knitr::kable(round(eig, 2))   # autovalor, % varianza, % acumulado
 # acumulada es de 80,1 %, la cual es suficiente. Además, sumar una componente más,
 # agregaría un grado de complejidad extra al análisis.
 
-# -------------------------------------------------------------
-# Scree plot - Gráfico de sedimentación
-# -------------------------------------------------------------
-fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 60))
 
 # Criterio 3: Scree plot 
 # Por último, otro criterio para elegir la cantidad de componentes es visualizar los 
@@ -204,13 +204,16 @@ fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 60))
 # descriptiva con un scree plot. Puede observarse una fuerte caida desde PC1 a PC2,
 # y luego la curva se aplana a partir de PC3-PC4.
 
+fviz_eig(damaPca, addlabels = TRUE, ylim = c(0, 60))
+
 #-----------------------------------------------------------------------
 # ¿Cuántas componentes retener?
 #-----------------------------------------------------------------------
+
 # A partir del análisis de los 3 criterios mencionados puede pensarse que es 
 # recomendable retener las primeras 3 componentes principales.
 
-var <- get_pca_var(damaPca)          # funciona con el objeto de prcomp
+var <- get_pca_var(damaPca)          
 
 round(var$cos2[, 1:4], 2)            # (a) calidad de representación por componente
 round(rowSums(var$cos2[, 1:2]), 2)   # (b) cos2 acumulado en PC1+PC2, dice qué proporción de la variabilidad de una variable queda capturada.
@@ -227,6 +230,7 @@ round(damaPca$rotation[, 3:4], 2)    # (d) cargas de PC3 y PC4
 #--------------------------------------------------------------------------------
 # Correlaciones entre cada variable y cada componente
 #--------------------------------------------------------------------------------
+
 # La correlación entre cada variable estandarizada y las componentes principales permite evaluar qué tan
 # bien representada está cada variable por cada componente principal.
 
@@ -316,7 +320,7 @@ fviz_pca_var(damaPca, col.var = "cos2",
 
 # El círculo de correlaciones aporta la calidad de representación de cada variable 
 # en el plano PC1–PC2 (cos2). La mayoría de las variables de tamaño 
-# (fruto, endocarpio, pétalo) están muy bien representadas, con lechas largas, cercanas 
+# (fruto, endocarpio, pétalo) están muy bien representadas, con flechas largas, cercanas 
 # al borde y en naranja fuerte, por lo que su interpretación es confiable.
 # En cambio, PECLIMBO queda menos representada, con una flecha corta y en color celeste, cos2 bajo.
 # Su variación no está capturada en este plano, por lo que no conviene interpretarla acá.
