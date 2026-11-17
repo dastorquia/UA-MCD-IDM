@@ -425,7 +425,7 @@ fviz_pca_var(damaPca, axes = c(1, 3), col.var = "cos2",
 #     distingue variedades con mayor flor de las de mayor fruto.
 #   - PC3 (9,4 %) está dominada casi exclusivamente por PECLIMBO, una variable 
 #     que en PC1–PC2 quedaba oculta. La misma, junto con LONANCHO, son variaciones 
-#     independientes del tamaño.
+#     ampliamentes representadas en esta componente.
 
 # A su vez, el biplot muestra la posición de variedades y variables, pero es recien
 # al cruzarlo con el circulo de correlaciones que podemos observar la calidad de representación.
